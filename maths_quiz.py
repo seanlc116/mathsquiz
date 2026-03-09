@@ -5,18 +5,19 @@ import time
 st.set_page_config(page_title="0-9 加減法速算練習", page_icon="🧮", layout="centered")
 
 st.title("🧮 0-9 加減法速算練習")
-st.markdown("**每15題自動統計一次**｜按 **S** 開始下一輪｜輸入答案後按 Enter 或點提交")
+st.markdown("**每15題自動統計**｜輸入答案後按 **Enter** 就會自動跳下一題！")
 
 # ==================== 初始化 ====================
 for key in ["mode", "total_score", "total_questions", "round_score", "round_questions",
             "round_start_time", "start_time", "end_time", "show_round_summary"]:
     if key not in st.session_state:
-        st.session_state[key] = None if key in ["mode", "start_time", "end_time", "round_start_time"] else 0
+        st.session_state[key] = None if key in ["mode","start_time","end_time","round_start_time"] else 0
 
 if "a" not in st.session_state: st.session_state.a = 0
 if "b" not in st.session_state: st.session_state.b = 0
 if "correct" not in st.session_state: st.session_state.correct = 0
 if "is_add" not in st.session_state: st.session_state.is_add = True
+if "message" not in st.session_state: st.session_state.message = ""   # 用來顯示答對/答錯
 
 def new_question():
     st.session_state.a = random.randint(0, 9)
@@ -28,6 +29,7 @@ def new_question():
         if st.session_state.a < st.session_state.b:
             st.session_state.a, st.session_state.b = st.session_state.b, st.session_state.a
         st.session_state.correct = st.session_state.a - st.session_state.b
+    st.session_state.message = ""   # 清空訊息
 
 # ==================== 模式選擇 ====================
 if st.session_state.mode is None:
@@ -64,32 +66,41 @@ else:
     if not st.session_state.show_round_summary:
         st.subheader(f"第 {st.session_state.total_questions + 1} 題")
         op = "+" if st.session_state.is_add else "-"
-        st.markdown(f"<h1 style='text-align:center; color:#FF4B4B;'>{st.session_state.a} {op} {st.session_state.b} = ?</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align:center; color:#FF4B4B; font-size:3.5rem;'>{st.session_state.a} {op} {st.session_state.b} = ?</h1>", unsafe_allow_html=True)
+
+        # 顯示上一次的答對/答錯訊息
+        if st.session_state.message:
+            if "✅" in st.session_state.message:
+                st.success(st.session_state.message)
+            else:
+                st.error(st.session_state.message)
 
         with st.form("answer_form", clear_on_submit=True):
-            answer = st.text_input("你的答案", key="current_answer", label_visibility="collapsed")
+            answer = st.text_input("你的答案（按 Enter 自動提交）", key="current_answer", label_visibility="collapsed")
             submitted = st.form_submit_button("提交答案", type="primary", use_container_width=True)
 
-            if submitted:
+            if submitted and answer.strip() != "":
                 try:
                     user_ans = int(answer.strip())
                     st.session_state.total_questions += 1
                     st.session_state.round_questions += 1
 
                     if user_ans == st.session_state.correct:
-                        st.success("✅ 答對了！太棒了！")
+                        st.session_state.message = "✅ 答對了！太棒了！"
                         st.session_state.total_score += 1
                         st.session_state.round_score += 1
                     else:
-                        st.error(f"❌ 答錯了！正確答案是 **{st.session_state.correct}**")
+                        st.session_state.message = f"❌ 答錯了！正確答案是 {st.session_state.correct}"
 
+                    # 判斷是否滿15題
                     if st.session_state.round_questions >= 15:
                         st.session_state.show_round_summary = True
                     else:
                         new_question()
                     st.rerun()
                 except:
-                    st.warning("請輸入數字！")
+                    st.session_state.message = "⚠️ 請輸入數字！"
+                    st.rerun()
 
     # ==================== 15題統計畫面 ====================
     else:
@@ -114,6 +125,7 @@ else:
             st.session_state.round_questions = 0
             st.session_state.round_start_time = time.time()
             st.session_state.show_round_summary = False
+            st.session_state.message = ""
             new_question()
             st.rerun()
 
