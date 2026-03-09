@@ -5,7 +5,7 @@ import time
 st.set_page_config(page_title="0-9 加減法速算練習", page_icon="🧮", layout="centered")
 
 st.title("🧮 0-9 加減法速算練習")
-st.markdown("**每15題自動統計**｜**手機數字鍵盤已開啟**｜輸入後按 Enter 自動跳下一題！")
+st.markdown("**答對才跳下一題**｜答錯會停留直到答對為止｜手機數字鍵盤已開啟")
 
 # ==================== 初始化 ====================
 for key in ["mode", "total_score", "total_questions", "round_score", "round_questions",
@@ -18,6 +18,7 @@ if "b" not in st.session_state: st.session_state.b = 0
 if "correct" not in st.session_state: st.session_state.correct = 0
 if "is_add" not in st.session_state: st.session_state.is_add = True
 if "message" not in st.session_state: st.session_state.message = ""
+if "waiting_for_correct" not in st.session_state: st.session_state.waiting_for_correct = False
 
 def new_question():
     st.session_state.a = random.randint(0, 9)
@@ -30,6 +31,7 @@ def new_question():
             st.session_state.a, st.session_state.b = st.session_state.b, st.session_state.a
         st.session_state.correct = st.session_state.a - st.session_state.b
     st.session_state.message = ""
+    st.session_state.waiting_for_correct = False
 
 # ==================== 模式選擇 ====================
 if st.session_state.mode is None:
@@ -68,6 +70,7 @@ else:
         op = "+" if st.session_state.is_add else "-"
         st.markdown(f"<h1 style='text-align:center; color:#FF4B4B; font-size:3.5rem;'>{st.session_state.a} {op} {st.session_state.b} = ?</h1>", unsafe_allow_html=True)
 
+        # 顯示訊息
         if st.session_state.message:
             if "✅" in st.session_state.message:
                 st.success(st.session_state.message)
@@ -75,7 +78,6 @@ else:
                 st.error(st.session_state.message)
 
         with st.form("answer_form", clear_on_submit=True):
-            # 這裡改成 number_input + 隱藏箭頭，讓手機直接跳數字鍵盤
             answer = st.number_input(
                 label="你的答案",
                 min_value=0,
@@ -90,21 +92,25 @@ else:
             if submitted:
                 try:
                     user_ans = int(answer)
-                    st.session_state.total_questions += 1
-                    st.session_state.round_questions += 1
-
                     if user_ans == st.session_state.correct:
                         st.session_state.message = "✅ 答對了！太棒了！"
                         st.session_state.total_score += 1
                         st.session_state.round_score += 1
-                    else:
-                        st.session_state.message = f"❌ 答錯了！正確答案是 {st.session_state.correct}"
+                        st.session_state.total_questions += 1
+                        st.session_state.round_questions += 1
+                        st.session_state.waiting_for_correct = False
 
-                    if st.session_state.round_questions >= 15:
-                        st.session_state.show_round_summary = True
+                        # 判斷是否滿15題
+                        if st.session_state.round_questions >= 15:
+                            st.session_state.show_round_summary = True
+                        else:
+                            new_question()
+                        st.rerun()
                     else:
-                        new_question()
-                    st.rerun()
+                        # 答錯 → 停留本題
+                        st.session_state.message = f"❌ 答錯了！正確答案是 {st.session_state.correct}，請再試一次"
+                        st.session_state.waiting_for_correct = True
+                        st.rerun()
                 except:
                     st.session_state.message = "⚠️ 請輸入數字！"
                     st.rerun()
@@ -133,6 +139,7 @@ else:
             st.session_state.round_start_time = time.time()
             st.session_state.show_round_summary = False
             st.session_state.message = ""
+            st.session_state.waiting_for_correct = False
             new_question()
             st.rerun()
 
@@ -150,3 +157,7 @@ else:
 # 產生第一題
 if st.session_state.mode and st.session_state.total_questions == 0 and st.session_state.a == 0:
     new_question()
+# 產生第一題
+if st.session_state.mode and st.session_state.total_questions == 0 and st.session_state.a == 0:
+    new_question()
+
