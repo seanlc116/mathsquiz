@@ -4,44 +4,14 @@ import time
 
 st.set_page_config(page_title="0-9 加減法速算練習", page_icon="🧮", layout="centered")
 
-# 自訂 CSS：紅底白字 + 震動動畫
-st.markdown("""
-<style>
-    .custom-error {
-        background-color: #FF4B4B !important;
-        color: white !important;
-        font-size: 1.4rem !important;
-        font-weight: bold !important;
-        padding: 15px !important;
-        border-radius: 12px !important;
-        text-align: center !important;
-        margin: 15px 0 !important;
-        animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        animation-iteration-count: 3;
-    }
-    @keyframes shake {
-        10%, 90% { transform: translate3d(-2px, 0, 0); }
-        20%, 80% { transform: translate3d(3px, 0, 0); }
-        30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
-        40%, 60% { transform: translate3d(5px, 0, 0); }
-    }
-    .stSuccess {
-        font-size: 1.4rem !important;
-        padding: 15px !important;
-        border-radius: 12px !important;
-        text-align: center !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 st.title("🧮 0-9 加減法速算練習")
-st.markdown("**答對才跳下一題**｜答錯紅底白字震動1秒後自動消失｜手機數字鍵盤已開啟")
+st.markdown("**答對才跳下一題**｜答錯請重新作答｜手機數字鍵盤已開啟")
 
 # ==================== 初始化 ====================
 for key in ["mode", "total_score", "total_questions", "round_score", "round_questions",
-            "round_start_time", "start_time", "end_time", "show_round_summary", "feedback_time"]:
+            "round_start_time", "start_time", "end_time", "show_round_summary"]:
     if key not in st.session_state:
-        st.session_state[key] = None if key in ["mode","start_time","end_time","round_start_time","feedback_time"] else 0
+        st.session_state[key] = None if key in ["mode","start_time","end_time","round_start_time"] else 0
 
 if "a" not in st.session_state: st.session_state.a = 0
 if "b" not in st.session_state: st.session_state.b = 0
@@ -60,7 +30,6 @@ def new_question():
             st.session_state.a, st.session_state.b = st.session_state.b, st.session_state.a
         st.session_state.correct = st.session_state.a - st.session_state.b
     st.session_state.feedback = None
-    st.session_state.feedback_time = None
 
 # ==================== 模式選擇 ====================
 if st.session_state.mode is None:
@@ -99,22 +68,11 @@ else:
         op = "+" if st.session_state.is_add else "-"
         st.markdown(f"<h1 style='text-align:center; color:#FF4B4B; font-size:3.8rem; margin:20px 0;'>{st.session_state.a} {op} {st.session_state.b} = ?</h1>", unsafe_allow_html=True)
 
-        # 顯示反饋（紅底白字震動 + 1秒自動消失）
+        # 優化後的錯誤/正確訊息顯示
         if st.session_state.feedback == "correct":
             st.success("✅ 答對了！太棒了！")
         elif st.session_state.feedback == "wrong":
-            current_time = time.time()
-            if st.session_state.feedback_time is None:
-                st.session_state.feedback_time = current_time
-            
-            # 顯示紅底白字震動訊息
-            st.markdown('<div class="custom-error">❌ 答錯了！請重新作答。</div>', unsafe_allow_html=True)
-            
-            # 1秒後自動消失（清除 feedback）
-            if current_time - st.session_state.feedback_time >= 1.0:
-                st.session_state.feedback = None
-                st.session_state.feedback_time = None
-                st.rerun()
+            st.error("❌ 答錯了！請重新作答。")
 
         with st.form("answer_form", clear_on_submit=True):
             answer = st.number_input(
@@ -145,11 +103,9 @@ else:
                         st.rerun()
                     else:
                         st.session_state.feedback = "wrong"
-                        st.session_state.feedback_time = None
                         st.rerun()
                 except:
                     st.session_state.feedback = "wrong"
-                    st.session_state.feedback_time = None
                     st.rerun()
 
     # ==================== 15題統計畫面 ====================
@@ -176,7 +132,6 @@ else:
             st.session_state.round_start_time = time.time()
             st.session_state.show_round_summary = False
             st.session_state.feedback = None
-            st.session_state.feedback_time = None
             new_question()
             st.rerun()
 
