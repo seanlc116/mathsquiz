@@ -5,7 +5,7 @@ import time
 st.set_page_config(page_title="0-9 加減法速算練習", page_icon="🧮", layout="centered")
 
 st.title("🧮 0-9 加減法速算練習")
-st.markdown("**答對才跳下一題**｜答錯請重新作答｜手機數字鍵盤已開啟")
+st.markdown("**答對才跳下一題**｜答錯只顯示「答錯了！請重新作答。」｜手機數字鍵盤已開啟")
 
 # ==================== 初始化 ====================
 for key in ["mode", "total_score", "total_questions", "round_score", "round_questions",
@@ -17,7 +17,8 @@ if "a" not in st.session_state: st.session_state.a = 0
 if "b" not in st.session_state: st.session_state.b = 0
 if "correct" not in st.session_state: st.session_state.correct = 0
 if "is_add" not in st.session_state: st.session_state.is_add = True
-if "feedback" not in st.session_state: st.session_state.feedback = None   # None / "correct" / "wrong"
+if "message" not in st.session_state: st.session_state.message = ""
+if "waiting_for_correct" not in st.session_state: st.session_state.waiting_for_correct = False
 
 def new_question():
     st.session_state.a = random.randint(0, 9)
@@ -29,7 +30,8 @@ def new_question():
         if st.session_state.a < st.session_state.b:
             st.session_state.a, st.session_state.b = st.session_state.b, st.session_state.a
         st.session_state.correct = st.session_state.a - st.session_state.b
-    st.session_state.feedback = None
+    st.session_state.message = ""
+    st.session_state.waiting_for_correct = False
 
 # ==================== 模式選擇 ====================
 if st.session_state.mode is None:
@@ -66,13 +68,14 @@ else:
     if not st.session_state.show_round_summary:
         st.subheader(f"第 {st.session_state.total_questions + 1} 題")
         op = "+" if st.session_state.is_add else "-"
-        st.markdown(f"<h1 style='text-align:center; color:#FF4B4B; font-size:3.8rem; margin:20px 0;'>{st.session_state.a} {op} {st.session_state.b} = ?</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align:center; color:#FF4B4B; font-size:3.5rem;'>{st.session_state.a} {op} {st.session_state.b} = ?</h1>", unsafe_allow_html=True)
 
-        # 優化後的錯誤/正確訊息顯示
-        if st.session_state.feedback == "correct":
-            st.success("✅ 答對了！太棒了！")
-        elif st.session_state.feedback == "wrong":
-            st.error("❌ 答錯了！請重新作答。")
+        # 顯示訊息
+        if st.session_state.message:
+            if "✅" in st.session_state.message:
+                st.success(st.session_state.message)
+            else:
+                st.error(st.session_state.message)
 
         with st.form("answer_form", clear_on_submit=True):
             answer = st.number_input(
@@ -90,11 +93,12 @@ else:
                 try:
                     user_ans = int(answer)
                     if user_ans == st.session_state.correct:
-                        st.session_state.feedback = "correct"
+                        st.session_state.message = "✅ 答對了！太棒了！"
                         st.session_state.total_score += 1
                         st.session_state.round_score += 1
                         st.session_state.total_questions += 1
                         st.session_state.round_questions += 1
+                        st.session_state.waiting_for_correct = False
 
                         if st.session_state.round_questions >= 15:
                             st.session_state.show_round_summary = True
@@ -102,10 +106,12 @@ else:
                             new_question()
                         st.rerun()
                     else:
-                        st.session_state.feedback = "wrong"
+                        # 答錯 → 只顯示指定文字，並停留本題
+                        st.session_state.message = "❌ 答錯了！請重新作答。"
+                        st.session_state.waiting_for_correct = True
                         st.rerun()
                 except:
-                    st.session_state.feedback = "wrong"
+                    st.session_state.message = "⚠️ 請輸入數字！"
                     st.rerun()
 
     # ==================== 15題統計畫面 ====================
@@ -131,7 +137,8 @@ else:
             st.session_state.round_questions = 0
             st.session_state.round_start_time = time.time()
             st.session_state.show_round_summary = False
-            st.session_state.feedback = None
+            st.session_state.message = ""
+            st.session_state.waiting_for_correct = False
             new_question()
             st.rerun()
 
