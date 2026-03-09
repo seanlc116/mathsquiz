@@ -5,7 +5,7 @@ import time
 st.set_page_config(page_title="0-9 加減法速算練習", page_icon="🧮", layout="centered")
 
 st.title("🧮 0-9 加減法速算練習")
-st.markdown("**答對才跳下一題**｜答錯會停留直到答對為止｜手機數字鍵盤已開啟")
+st.markdown("**答對才跳下一題**｜答錯只顯示「答錯了！請重新作答。」｜手機數字鍵盤已開啟")
 
 # ==================== 初始化 ====================
 for key in ["mode", "total_score", "total_questions", "round_score", "round_questions",
@@ -100,15 +100,14 @@ else:
                         st.session_state.round_questions += 1
                         st.session_state.waiting_for_correct = False
 
-                        # 判斷是否滿15題
                         if st.session_state.round_questions >= 15:
                             st.session_state.show_round_summary = True
                         else:
                             new_question()
                         st.rerun()
                     else:
-                        # 答錯 → 停留本題
-                        st.session_state.message = f"❌ 答錯了！正確答案是 {st.session_state.correct}，請再試一次"
+                        # 答錯 → 只顯示指定文字，並停留本題
+                        st.session_state.message = "❌ 答錯了！請重新作答。"
                         st.session_state.waiting_for_correct = True
                         st.rerun()
                 except:
@@ -157,7 +156,3 @@ else:
 # 產生第一題
 if st.session_state.mode and st.session_state.total_questions == 0 and st.session_state.a == 0:
     new_question()
-# 產生第一題
-if st.session_state.mode and st.session_state.total_questions == 0 and st.session_state.a == 0:
-    new_question()
-
